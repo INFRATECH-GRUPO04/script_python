@@ -68,28 +68,49 @@ for arquivo in dados:
                 def convercao():
                     if indice == 3 or indice == 4 or indice == 6 or indice == 7:
                         numerico = float(ultimo_valor)
-                        print(f"{cabecalho[indice]}: {conversaoGB(numerico)}")
+                        print(f"{cabecalho[indice]}: {conversaoGB(numerico)}\n")
                     else:
-                        print(f"{cabecalho[indice]}: {ultimo_valor}")
+                        print(f"{cabecalho[indice]}: {ultimo_valor}\n")
+
+                def estatistica():
+                    valores_coluna = [float(linha[indice]) for linha in linhas if len(linha) > indice and linha[indice] != '']
+
+                    v_max = max(valores_coluna)
+                    v_min = min(valores_coluna)
+                    v_media = sum(valores_coluna) / len(valores_coluna)
+
+                    if indice == 3 or indice == 4 or indice == 6 or indice == 7:
+                        print(f"Valor máximo: {conversaoGB(v_max)}")
+                        print(f"Valor mínimo: {conversaoGB(v_min)} ")
+                        print(f"Média: :{conversaoGB(v_media)} ")
+                    else:
+                        print(f"Valor máximo: :{v_max}")
+                        print(f"Valor mínimo: :{v_min}")
+                        print(f"Média: :{v_media}")
 
                 for compo in escolha:
+
                     if compo == 1:
                         if indice == 1 or indice==2:
                             convercao()
                         else:
                             continue
+                        estatistica()
                     elif compo == 2:
                         if indice == 5 or indice == 3 or indice == 4:
                             convercao()
                         else:
                             continue
+                        estatistica()
                     elif compo == 3:
                         if indice == 6 or indice == 7 or indice == 8:
                             convercao()
                         else:
                             continue
+                        estatistica()
                     else:
                         convercao()
+                        estatistica()
 
     except FileNotFoundError:
         print(f"Arquivo {arquivo} não encontrado.")

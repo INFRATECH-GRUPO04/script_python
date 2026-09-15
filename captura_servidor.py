@@ -1,8 +1,12 @@
-import csv
-import time as t
-import psutil as p
+import csv #para gerar o arquivo csv
+import psutil #para capturar os dados dos componentes
+from datetime import datetime #data e hora
 
-limite = 0
+CONFIG = { #configuração do nome do usuario, linha escrita e qtd de linhas
+    "username": "Servidor-B21X7M",
+    "write_interval": 1,
+    "csv_lines": 10
+}
 
 print(f"""
 ==========================================================================================
@@ -13,38 +17,54 @@ print(f"""
     ######  ##    ###  ##      ##    #  ##    ##       ##     #######    ####  ##   ##
 ==========================================================================================
 """)
-t.sleep(5)
-print("\n"* 100)
+print("\n"* 2)
 
-print("==========================================================================================")
-Server = input("Qual o nome do servidor: ")
-print("==========================================================================================")
+def capturar_dados(): #função que captura os dados
+    print("Iniciando a Captura dos Dados: ")
+    linhas_csv = CONFIG["csv_lines"] #configuração da qtd de linhas
+
+    with open(f'./dados_{CONFIG["username"]}.csv', 'w', newline='') as csvfile:
+        fieldNames = ['username', 'data_hora' ,'cpu', 'inte_cpu' ,'ram_disponivel', 'ram_total', 'ram' ,'disco', 'disco_disponivel', 'disco_total']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldNames)
+        writer.writeheader()
+
+        while(linhas_csv > 0): #loop para criar cada linha
+
+            #CPU:
+            cpu_percent = psutil.cpu_percent(interval=CONFIG["write_interval"]) #uso da cpu no intervalo configurado, em %
+            cpu_interruption = psutil.cpu_stats().interrupts #contagem de interrupções em decimal
+
+            #RAM:
+            conversor = 1024 ** 3
+            
+            mem_percent = psutil.virtual_memory().percent #memória RAM utilizada em %
+
+            mem_total = psutil.virtual_memory().total
+            mem_total_gb = mem_total / conversor #memória em total em GB
+
+            mem_disponivel = psutil.virtual_memory().available
+            mem_disponivel_gb = mem_disponivel / conversor # memória disponível em GB
+
+            #DISCO:
+            disk_disponivel = psutil.disk_usage('/').free
+            disk_disponivel_gb = disk_disponivel / conversor # disco livre em GB
+
+            disk_percent = psutil.disk_usage('/').percent #ocupação do disco principal em %
+
+            disk_total = psutil.disk_usage('/').total
+            disk_total_gb = disk_total / conversor #disco total em GB
+
+            #DATA E HORA:
+            now = datetime.now()
+            now_formated = now.strftime("%Y-%m-%d %H:%M:%S")
+
+            writer.writerow({'username': CONFIG["username"], 'data_hora': now_formated, 'cpu': cpu_percent, 'inte_cpu': cpu_interruption, 'ram_disponivel': mem_disponivel_gb, 'ram_total': mem_total_gb, 'ram': mem_percent, 'disco': disk_percent, 'disco_disponivel': disk_disponivel_gb, 'disco_total': disk_total_gb})
+
+            print(f"Usuário: {CONFIG["username"]} | Data e Hora: {now_formated} | Uso de CPU: {cpu_percent}% | Interrupções de Hardware: {cpu_interruption} | RAM Disponível: {mem_disponivel_gb:.2f}GB | RAM Total: {mem_total_gb:.2f}GB | Uso de Memória RAM: {mem_percent}% | Uso de Disco: {disk_percent}% | Disco Disponível: {disk_disponivel_gb:.2f}GB | Disco Total: {disk_total_gb:.2f}GB")
+            linhas_csv -= 1
+
+    print("Encerrando a Captura dos Dados.")
+
+capturar_dados()
 
 
-# Validação para ver se o arquivo existe
-try:
-    with open(f'{Server}.csv', 'r'):
-        pass
-except FileNotFoundError:
-    with open(f'{Server}.csv', 'w', newline='') as arquivo:
-            csv.writer(arquivo).writerow(["TimeStamp", "CPU%", "InteCPU", "TotalRAM", "DisponivelRAM", "RAM%", "TotalDisco", "DisponivelDisco", "Disco%"])
-
-t.sleep(1);
-print("Data e Hora, %CPU, InteCPU, TotalRAM, DisponivelRAM, RAM%, TotalDisco, DisponivelDisco, Disco%")
-
-while limite <= 5:
-    timestamp = t.strftime('%d/%m/%Y %H:%M:%S')
-    per_cpu = p.cpu_percent(interval=1)
-    InterruptionCPU = p.cpu_stats().interrupts
-    TotalRAM = p.virtual_memory().total
-    DisponivelRAM = p.virtual_memory().available
-    per_ram = p.virtual_memory().percent
-    TotalDisco = p.disk_usage('C://').total
-    DisponivelDisco = p.disk_usage('C://').used
-    per_Disco = p.disk_usage('C://').percent
-    
-    with open(f'{Server}.csv', 'a', newline='') as arquivo:
-        csv.writer(arquivo).writerow([timestamp, per_cpu, InterruptionCPU, TotalRAM, DisponivelRAM, per_ram, TotalDisco, DisponivelDisco, per_Disco])
-    print(timestamp, per_cpu, InterruptionCPU, TotalRAM, DisponivelRAM, per_ram, TotalDisco, DisponivelDisco, per_Disco)
-    limite += 1
-    t.sleep(3)

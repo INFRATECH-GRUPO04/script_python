@@ -66,5 +66,3 @@ def capturar_dados(): #função que captura os dados
     print("Encerrando a Captura dos Dados.")
 
 capturar_dados()
-
-

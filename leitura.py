@@ -8,11 +8,9 @@ import glob
 from datetime import datetime
 
 
-# Mostra uma mensagem de acordo com o percentual de uso da CPU.
+# Mostra uma mensagem de acordo com o percentual de uso da CPU e contagem de intervenções.
 def cpu_use(cpu, inte_cpu):
 
-    # As condições são verificadas em ordem.
-    # Quando uma delas é atendida, as seguintes não são executadas.
     if cpu < 10.0:
         print("Uso de CPU normal.")
 
@@ -55,7 +53,7 @@ def cpu_use(cpu, inte_cpu):
 
 
         # Mostra uma mensagem de acordo com a quantidade de interrupções da CPU.
-    print(f"Interrupções de hardware (inte_cpu): {inte_cpu:.0f}")
+    print(f"\nInterrupções de hardware (inte_cpu): {inte_cpu:.0f}")
     if inte_cpu < 5000:
         print("Nível de interrupções Normal (Uso cotidiano, operação padrão).")
     elif inte_cpu < 15000:
@@ -64,14 +62,12 @@ def cpu_use(cpu, inte_cpu):
         print("Nível de interrupções Alto (Possível gargalo de hardware, alto tráfego de rede ou falha de driver).")    
 
 
-# Recebe o percentual de uso e a capacidade total da RAM em bytes.
+# Recebe o percentual de uso, capacidade total e disponibilidade da RAM em GB.
 def ram_use(ram, ram_total, ram_disponivel):
 
     # Calcula a quantidade de memória usada com base no percentual.
     ram_usada = ram_total * (ram / 100)
 
-    # Converte bytes para GiB, embora as mensagens usem a sigla GB.
-    # ** significa potência: 1024 ** 3 é 1024 elevado ao cubo.
     ram_usada_gb = ram_usada
     ram_total_gb = ram_total
 
@@ -128,7 +124,7 @@ def ram_use(ram, ram_total, ram_disponivel):
 
 # Analise com base na RAM disponivel
     ram_disponivel_gb = ram_disponivel
-    print(f"Status extra: Existem {ram_disponivel_gb:.2f} GB de RAM fisicamente disponíveis.")
+    print(f"\nStatus extra: Existem {ram_disponivel_gb:.2f} GB de RAM fisicamente disponíveis.")
     
     if ram_disponivel_gb < 1.0:
         print("ALERTA: Memória disponível muito baixa! Alto risco de lentidão ou travamento.")
@@ -136,13 +132,12 @@ def ram_use(ram, ram_total, ram_disponivel):
         print("Memória disponível em níveis seguros para novos processos.")    
 
 
-# Recebe o percentual de uso e a capacidade total do disco em bytes.
+# Recebe o percentual de uso, capacidade total e disponibilidade do disco em GB.
 def disco_use(disco, disco_total, disco_disponivel):
 
     # Calcula o espaço usado com base no percentual.
     disco_usado = disco_total * (disco / 100)
 
-    # Converte bytes para GiB, embora as mensagens usem a sigla GB.
     disco_usado_gb = disco_usado 
     disco_total_gb = disco_total
 
@@ -198,7 +193,7 @@ def disco_use(disco, disco_total, disco_disponivel):
 
         #Analise com base no disco disponivel
     disco_disponivel_gb = disco_disponivel
-    print(f"Status extra: Espaço livre absoluto no disco é de {disco_disponivel_gb:.2f} GB.")
+    print(f"\nStatus extra: Espaço livre absoluto no disco é de {disco_disponivel_gb:.2f} GB.")
     
     if disco_disponivel_gb < 10.0:
         print(" ALERTA CRÍTICO: Menos de 10 GB livres. O sistema operacional pode apresentar falhas ou corromper arquivos.")
@@ -349,7 +344,6 @@ def processar_dados(arquivos):
                 quantidade_registros += 1
 
                 # Mostra os dados do registro atual.
-                # \n pula uma linha.2
                 # strftime formata a data para dia/mês/ano hora:minuto:segundo.
                 print(
                     "\n"
@@ -380,15 +374,12 @@ def processar_dados(arquivos):
         media_cpu = soma_cpu / quantidade_registros
         media_ram = soma_ram / quantidade_registros
         media_disco = soma_disco / quantidade_registros
-        
-        # --- MÉDIAS DOS NOVOS DADOS ---
         media_inte_cpu = soma_inte_cpu / quantidade_registros
         media_ram_disponivel = soma_ram_disponivel / quantidade_registros
         media_disco_disponivel = soma_disco_disponivel / quantidade_registros
 
-        # Convertendo as médias de bytes para GB no resumo final
-        media_ram_disponivel_gb = media_ram_disponivel / (1024 ** 3)
-        media_disco_disponivel_gb = media_disco_disponivel / (1024 ** 3)
+        media_ram_disponivel_gb = media_ram_disponivel 
+        media_disco_disponivel_gb = media_disco_disponivel 
 
         # Mostra a quantidade de registros e as médias calculadas.
         print(
@@ -487,127 +478,3 @@ def iniciar():
 
 #inicia tudo
 iniciar()
-
-
-
-
-
-
-# import csv
-# import time as t
-
-# dados = [arq for arq in __import__('os').listdir('.') if arq.endswith('.csv')]
-
-# limite = 0
-# def conversaoGB(numero):
-#     return f"{numero / 1024**3:.2f} GB"
-
-# print(f"""
-# ==========================================================================================
-#     ######  ###    ##  ######  ######     ####      ########  #######    ####  ##   ##
-#       ##    ## #   ##  ##      ##    #  ##    ##       ##     ##       ##      ##   ##
-#       ##    ##  #  ##  ####    ######   ##    ##       ##     #####    ##      #######
-#       ##    ##   # ##  ##      ##  ##   ########       ##     ##       ##      ##   ##
-#     ######  ##    ###  ##      ##    #  ##    ##       ##     #######    ####  ##   ##
-# ==========================================================================================
-# """)
-# t.sleep(3)
-# print("\n" * 100)
-
-# escolha = []
-
-# while limite < 3:
-#     print("""
-# 1. CPU      2. RAM      3. Disco        4. Todos os componentes
-# """)
-#     componente = int(input("Escolha o componente: "))
-#     if componente == 4:
-#         escolha.append(componente)
-#         break
-#     elif componente > 4 or componente < 1:
-#         print("Não existe este componente, tente novamente")
-#         continue
-#     else:
-#         escolha.append(componente)
-#         limite +=1
-
-#     continuar = str(input("Escolher outro componente (responda com s ou n): "))
-#     if continuar == "s":
-#         continue
-#     else:
-#         break
-
-# print(escolha)
-
-
-
-# for arquivo in dados:
-#     t.sleep(2)
-#     print(f"\n==========================================================================================")
-#     print(arquivo, "\n")
-#     try:
-#         with open(arquivo, 'r') as arquivo:
-#             leitor = csv.reader(arquivo)
-            
-#             cabecalho = next(leitor)
-#             qtd_colunas = len(cabecalho)
-#             linhas = list(leitor)
-#             qtd_linhas = len(linhas)
-
-#             print("Ultimo valor")
-
-#             for indice in range(0, qtd_colunas):
-#                 ultima = linhas[-1]
-#                 ultimo_valor = ultima[indice]
-
-#                 def convercao():
-#                     if indice == 3 or indice == 4 or indice == 6 or indice == 7:
-#                         numerico = float(ultimo_valor)
-#                         print(f"{cabecalho[indice]}: {conversaoGB(numerico)}\n")
-#                     else:
-#                         print(f"{cabecalho[indice]}: {ultimo_valor}\n")
-
-#                 def estatistica():
-#                     valores_coluna = [float(linha[indice]) for linha in linhas if len(linha) > indice and linha[indice] != '']
-
-#                     v_max = max(valores_coluna)
-#                     v_min = min(valores_coluna)
-#                     v_media = sum(valores_coluna) / len(valores_coluna)
-
-#                     if indice == 3 or indice == 4 or indice == 6 or indice == 7:
-#                         print(f"Valor máximo: {conversaoGB(v_max)}")
-#                         print(f"Valor mínimo: {conversaoGB(v_min)} ")
-#                         print(f"Média: :{conversaoGB(v_media)} ")
-#                     else:
-#                         print(f"Valor máximo: :{v_max}")
-#                         print(f"Valor mínimo: :{v_min}")
-#                         print(f"Média: :{v_media}")
-
-#                 for compo in escolha:
-
-#                     if compo == 1:
-#                         if indice == 1 or indice==2:
-#                             convercao()
-#                         else:
-#                             continue
-#                         estatistica()
-#                     elif compo == 2:
-#                         if indice == 5 or indice == 3 or indice == 4:
-#                             convercao()
-#                         else:
-#                             continue
-#                         estatistica()
-#                     elif compo == 3:
-#                         if indice == 6 or indice == 7 or indice == 8:
-#                             convercao()
-#                         else:
-#                             continue
-#                         estatistica()
-#                     else:
-#                         convercao()
-#                         estatistica()
-
-#     except FileNotFoundError:
-#         print(f"Arquivo {arquivo} não encontrado.")
-
-# print(f"\n==========================================================================================")

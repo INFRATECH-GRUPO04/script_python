@@ -54,10 +54,6 @@ def capturar_dados(): #função que captura os dados
             disk_total = psutil.disk_usage('/').total
             disk_total_gb = disk_total / conversor #disco total em GB
 
-            #PROCESSOS
-            for processos in psutil.process_iter(['pid', 'name', 'username']):
-            print(processos.info)
-
             #DATA E HORA:
             now = datetime.now()
             now_formated = now.strftime("%Y-%m-%d %H:%M:%S")
@@ -66,6 +62,27 @@ def capturar_dados(): #função que captura os dados
 
             print(f"Usuário: {CONFIG["username"]} | Data e Hora: {now_formated} | Uso de CPU: {cpu_percent}% | Interrupções de Hardware: {cpu_interruption} | RAM Disponível: {mem_disponivel_gb:.2f}GB | RAM Total: {mem_total_gb:.2f}GB | Uso de Memória RAM: {mem_percent}% | Uso de Disco: {disk_percent}% | Disco Disponível: {disk_disponivel_gb:.2f}GB | Disco Total: {disk_total_gb:.2f}GB")
             linhas_csv -= 1
+
+    with open(f'./dados_processos_{CONFIG["username"]}.csv', 'w', newline='') as csvfile:
+            fieldNames = ['Usuario', 'data_hora', 'PID', 'Nome' ,'Username']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldNames)
+            writer.writeheader()
+        
+            while(linhas_csv > 0):
+        
+                #DATA E HORA:
+                now = datetime.now()
+                now_formated = now.strftime("%Y-%m-%d %H:%M:%S")
+    
+                #PROCESSOS
+                for processos in psutil.process_iter(['pid', 'name', 'username']):
+                    info = processos.info
+                    if info['username'] is not None:
+                        writer.writerow({'Usuario': CONFIG["username"], 'data_hora': now_formated, 'PID': info["pid"], 'Nome': info["name"], 'Username': info["username"]})
+        
+                        print(f"Usuário: {CONFIG["username"]} | Data e Hora: {now_formated} | PID: {info["pid"]} | Nome: {info["name"]} | Username: {info["username"]}")
+                        linhas_csv -= 1
+                    
 
     print("Encerrando a Captura dos Dados.")
 

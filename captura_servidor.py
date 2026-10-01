@@ -54,6 +54,10 @@ def capturar_dados(): #função que captura os dados
             disk_total = psutil.disk_usage('/').total
             disk_total_gb = disk_total / conversor #disco total em GB
 
+            #PROCESSOS
+            for processos in psutil.process_iter(['pid', 'name', 'username']):
+            print(processos.info)
+
             #DATA E HORA:
             now = datetime.now()
             now_formated = now.strftime("%Y-%m-%d %H:%M:%S")

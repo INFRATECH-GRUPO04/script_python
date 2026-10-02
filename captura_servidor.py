@@ -19,16 +19,17 @@ print(f"""
 """)
 print("\n"* 2)
 
-def capturar_dados(): #função que captura os dados
+def capturar_dados(): # Função que captura os dados
     print("Iniciando a Captura dos Dados: ")
-    linhas_csv = CONFIG["csv_lines"] #configuração da qtd de linhas
+    dados_linhas_csv = CONFIG["csv_lines"]
+    processos_linhas_csv = CONFIG["csv_lines"]
 
     with open(f'./dados_{CONFIG["username"]}.csv', 'w', newline='') as csvfile:
         fieldNames = ['username', 'data_hora' ,'cpu', 'inte_cpu' ,'ram_disponivel', 'ram_total', 'ram' ,'disco', 'disco_disponivel', 'disco_total']
         writer = csv.DictWriter(csvfile, fieldnames=fieldNames)
         writer.writeheader()
 
-        while(linhas_csv > 0): #loop para criar cada linha
+        while(dados_linhas_csv > 0): #loop para criar cada linha
 
             #CPU:
             cpu_percent = psutil.cpu_percent(interval=CONFIG["write_interval"]) #uso da cpu no intervalo configurado, em %
@@ -61,15 +62,15 @@ def capturar_dados(): #função que captura os dados
             writer.writerow({'username': CONFIG["username"], 'data_hora': now_formated, 'cpu': cpu_percent, 'inte_cpu': cpu_interruption, 'ram_disponivel': mem_disponivel_gb, 'ram_total': mem_total_gb, 'ram': mem_percent, 'disco': disk_percent, 'disco_disponivel': disk_disponivel_gb, 'disco_total': disk_total_gb})
 
             print(f"Usuário: {CONFIG["username"]} | Data e Hora: {now_formated} | Uso de CPU: {cpu_percent}% | Interrupções de Hardware: {cpu_interruption} | RAM Disponível: {mem_disponivel_gb:.2f}GB | RAM Total: {mem_total_gb:.2f}GB | Uso de Memória RAM: {mem_percent}% | Uso de Disco: {disk_percent}% | Disco Disponível: {disk_disponivel_gb:.2f}GB | Disco Total: {disk_total_gb:.2f}GB")
-            linhas_csv -= 1
+            dados_linhas_csv -= 1
 
     
-    with open(f'./dados_processos_{CONFIG["username"]}.csv', 'w', newline='') as csvfile:
+    with open(f'./processos_{CONFIG["username"]}.csv', 'w', newline='') as csvfile:
         fieldNames = ['Usuario', 'data_hora', 'PID', 'Nome' ,'Username']
         writer = csv.DictWriter(csvfile, fieldnames=fieldNames)
         writer.writeheader()
     
-        while(linhas_csv > 0): 
+        while(processos_linhas_csv > 0): 
     
             #DATA E HORA:
             now = datetime.now()
@@ -82,7 +83,7 @@ def capturar_dados(): #função que captura os dados
                     writer.writerow({'Usuario': CONFIG["username"], 'data_hora': now_formated, 'PID': info["pid"], 'Nome': info["name"], 'Username': info["username"]})
     
                     print(f"Usuário: {CONFIG["username"]} | Data e Hora: {now_formated} | PID: {info["pid"]} | Nome: {info["name"]} | Username: {info["username"]}")
-                    linhas_csv -= 1
+                    processos_linhas_csv -= 1
                     
 
     print("Encerrando a Captura dos Dados.")

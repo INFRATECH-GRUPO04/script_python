@@ -7,7 +7,7 @@ import requests  # Para falar com o back-end (pip install requests)
 from datetime import datetime, timedelta, timezone  # Data e hora
 
 # ---------------- CONFIGURAÇÕES ----------------
-URL_API = "http://32.199.182.177"  # Endereço do back-end
+URL_API = "http://107.23.216.27"  # Endereço do back-end
 MODO_SIMULACAO = True  # True = simula um servidor de jogo | False = lê a máquina de verdade
 INTERVALO = 60  # Segundos entre uma captura e outra (1 minuto)
 CAPTURAS_POR_LOTE = 10  # 10 capturas de 1 minuto = envio a cada 10 minutos

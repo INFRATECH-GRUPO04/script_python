@@ -12,6 +12,9 @@ MODO_SIMULACAO = True  # True = simula um servidor de jogo | False = lê a máqu
 INTERVALO = 60  # Segundos entre uma captura e outra (1 minuto)
 CAPTURAS_POR_LOTE = 10  # 10 capturas de 1 minuto = envio a cada 10 minutos
 
+# Definindo o fuso horário de Brasília (UTC-3) para alinhar a ETL
+FUSO_BRASILIA = timezone(timedelta(hours=-3))
+
 print("""
 ==========================================================================================
     ######  ###    ##  ######  ######     ####      ########  #######    ####  ##   ##
@@ -69,13 +72,13 @@ print(f"Capturando a cada {INTERVALO}s e enviando a cada {INTERVALO * CAPTURAS_P
 
 while True:  # Cada volta do while é um lote
     linhas = []
-    lote = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")  # Nome do lote: quando ele começou
+    lote = datetime.now(FUSO_BRASILIA).strftime("%Y%m%dT%H%M%SZ")
 
     for captura in range(CAPTURAS_POR_LOTE):  # Cada volta do for é uma captura (1 minuto)
-        agora = datetime.now(timezone.utc)  # Tudo em UTC
+        agora = datetime.now(FUSO_BRASILIA)  # Ajustado para o horário de Brasília
 
         if MODO_SIMULACAO:
-            hora_local = agora - timedelta(hours=3)  # Horário de Brasília: é quando os jogadores jogam
+            hora_local = agora
             carga = curva_hora[hora_local.hour] * fator * random.uniform(0.9, 1.1)
             if hora_local.weekday() >= 5:  # Sábado e domingo têm mais jogadores
                 carga = carga * 1.15
@@ -98,7 +101,7 @@ while True:  # Cada volta do while é um lote
             ram_disponivel = round(ram_total * (1 - ram / 100), 3)
 
             # Disco: sobe devagar e volta quando limpam os logs (a cada 30 dias)
-            dias = (agora - datetime(2026, 1, 1, tzinfo=timezone.utc)).days
+            dias = (agora - datetime(2026, 1, 1, tzinfo=FUSO_BRASILIA)).days
             disco = round(min(100, 40 + id_servidor % 10 + (dias % 30) * 1.2), 1)
             disco_disponivel = round(disco_total * (1 - disco / 100), 3)
 
@@ -126,12 +129,12 @@ while True:  # Cada volta do while é um lote
 
         hora = agora.strftime("%Y-%m-%d %H:%M:%S")
         linhas.append({'id_empresa': id_empresa, 'id_servidor': id_servidor, 'username': nome_servidor,
-                       'data_hora': hora, 'cpu': cpu, 'inte_cpu': interrupcoes, 'ram_disponivel': ram_disponivel,
-                       'ram_total': ram_total, 'ram': ram, 'disco': disco, 'disco_disponivel': disco_disponivel,
-                       'disco_total': disco_total, 'bytes_enviados': bytes_enviados,
-                       'bytes_recebidos': bytes_recebidos, 'pacotes_enviados': pacotes_enviados,
-                       'pacotes_recebidos': pacotes_recebidos})
-        print(f"[{hora} UTC] CPU: {cpu}% | RAM: {ram}% | Disco: {disco}%")
+                        'data_hora': hora, 'cpu': cpu, 'inte_cpu': interrupcoes, 'ram_disponivel': ram_disponivel,
+                        'ram_total': ram_total, 'ram': ram, 'disco': disco, 'disco_disponivel': disco_disponivel,
+                        'disco_total': disco_total, 'bytes_enviados': bytes_enviados,
+                        'bytes_recebidos': bytes_recebidos, 'pacotes_enviados': pacotes_enviados,
+                        'pacotes_recebidos': pacotes_recebidos})
+        print(f"[{hora} BRT] CPU: {cpu}% | RAM: {ram}% | Disco: {disco}%")
         time.sleep(INTERVALO)
 
     # ---------------- FIM DO LOTE: gera os CSVs ----------------
@@ -153,7 +156,6 @@ while True:  # Cada volta do while é um lote
                                  'Username': info['username']})
 
     # ---------------- ENVIA OS CSVs PARA O BACK-END (ele grava no S3) ----------------
-    # Envia todos os dados_*.csv e processos_*.csv da pasta: o que falhou antes é reenviado agora
     for arquivo in sorted(os.listdir('.')):
         if arquivo.startswith("dados_") or arquivo.startswith("processos_"):
             tipo = arquivo.split("_")[0]  # "dados" ou "processos"
@@ -161,8 +163,8 @@ while True:  # Cada volta do while é um lote
             try:
                 with open(arquivo, 'rb') as csvfile:
                     resposta = requests.post(URL_API + "/agente/enviar", data=csvfile.read(), timeout=30,
-                                             headers={"x-chave-servidor": chave, "x-tipo-arquivo": tipo,
-                                                      "x-lote-inicio": lote_do_arquivo, "Content-Type": "text/csv"})
+                                           headers={"x-chave-servidor": chave, "x-tipo-arquivo": tipo,
+                                                     "x-lote-inicio": lote_do_arquivo, "Content-Type": "text/csv"})
                 if resposta.status_code == 200:
                     os.remove(arquivo)  # Enviou, então pode apagar
                     print(f"Enviado: {arquivo}")

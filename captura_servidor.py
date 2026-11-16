@@ -62,10 +62,12 @@ bytes_enviados = 5000000000
 bytes_recebidos = 3000000000
 pacotes_enviados = 15000000
 pacotes_recebidos = 30000000
+trocas_contexto = 1200000000
+temperatura_cpu = 58.5
 
 campos_dados = ['id_empresa', 'id_servidor', 'username', 'data_hora', 'cpu', 'inte_cpu', 'ram_disponivel', 'ram_total',
                 'ram', 'disco', 'disco_disponivel', 'disco_total', 'bytes_enviados', 'bytes_recebidos',
-                'pacotes_enviados', 'pacotes_recebidos']
+                'pacotes_enviados', 'pacotes_recebidos', 'trocas_contexto', 'temperatura_cpu']
 campos_processos = ['id_empresa', 'id_servidor', 'Usuario', 'data_hora', 'PID', 'Nome', 'Username']
 
 print(f"Capturando a cada {INTERVALO}s e enviando a cada {INTERVALO * CAPTURAS_POR_LOTE}s. Ctrl+C para parar.\n")
@@ -111,6 +113,8 @@ while True:  # Cada volta do while é um lote
             bytes_recebidos = bytes_recebidos + int(jogadores * 1500 * INTERVALO * random.uniform(0.9, 1.1))
             pacotes_enviados = bytes_enviados // 300
             pacotes_recebidos = bytes_recebidos // 100
+            trocas_contexto = trocas_contexto + int((15000 + 400 * cpu + jogadores * 50) * INTERVALO * random.uniform(0.95, 1.05))
+            temperatura_cpu = round(40.0 + (cpu * 0.45) + random.uniform(-1.5, 1.5), 1)
             print(f"   jogadores simulados: {jogadores}")
 
         else:  # Leitura da máquina de verdade
@@ -126,6 +130,8 @@ while True:  # Cada volta do while é um lote
             bytes_recebidos = psutil.net_io_counters().bytes_recv
             pacotes_enviados = psutil.net_io_counters().packets_sent
             pacotes_recebidos = psutil.net_io_counters().packets_recv
+            trocas_contexto = psutil.cpu_stats().ctx_switches
+            temperatura_cpu = round(float(next(iter(psutil.sensors_temperatures().values())).current), 1)
 
         hora = agora.strftime("%Y-%m-%d %H:%M:%S")
         linhas.append({'id_empresa': id_empresa, 'id_servidor': id_servidor, 'username': nome_servidor,
@@ -133,7 +139,7 @@ while True:  # Cada volta do while é um lote
                         'ram_total': ram_total, 'ram': ram, 'disco': disco, 'disco_disponivel': disco_disponivel,
                         'disco_total': disco_total, 'bytes_enviados': bytes_enviados,
                         'bytes_recebidos': bytes_recebidos, 'pacotes_enviados': pacotes_enviados,
-                        'pacotes_recebidos': pacotes_recebidos})
+                        'pacotes_recebidos': pacotes_recebidos, 'trocas_contexto': trocas_contexto, 'temperatura_cpu': temperatura_cpu})
         print(f"[{hora} BRT] CPU: {cpu}% | RAM: {ram}% | Disco: {disco}%")
         time.sleep(INTERVALO)
 

@@ -1,5 +1,6 @@
 import csv  # Para gerar os arquivos csv
 import os  # Para apagar o arquivo depois que ele for enviado
+import platform  # Para saber se estamos no Windows ou no Linux
 import random  # Para variar os dados da simulação
 import time  # Para esperar entre uma captura e outra
 import psutil  # Para capturar os dados da máquina e os processos
@@ -71,6 +72,52 @@ campos_dados = ['id_empresa', 'id_servidor', 'username', 'data_hora', 'cpu', 'in
                 'pacotes_enviados', 'pacotes_recebidos', 'trocas_contexto', 'temperatura_cpu', 'tempo_escrita_disco']
 campos_processos = ['id_empresa', 'id_servidor', 'Usuario', 'data_hora', 'PID', 'Nome', 'Username']
 
+# ---------------- AJUDAS PARA LER A MÁQUINA (WINDOWS E LINUX) ----------------
+def raiz_disco():
+    # No Windows '/' não é um disco válido; usa a unidade do sistema (normalmente C:\\).
+    if platform.system() == "Windows":
+        return os.environ.get("SystemDrive", "C:") + os.sep
+    return "/"
+
+
+def ler_temperatura_cpu():
+    # Sensores de temperatura existem no Linux, mas não no Windows (psutil não expõe).
+    if not hasattr(psutil, "sensors_temperatures"):
+        return None
+    sensores = psutil.sensors_temperatures()
+    for leituras in sensores.values():
+        for leitura in leituras:
+            if leitura.current is not None:
+                return round(float(leitura.current), 1)
+    return None
+
+
+def ler_tempo_escrita_disco():
+    # write_time existe no Windows, mas pode vir None; no Linux pode não haver disco IO.
+    io = psutil.disk_io_counters()
+    if io is None or getattr(io, "write_time", None) is None:
+        return None
+    return io.write_time
+
+
+def valor_ou_vazio(valor):
+    # Sem leitura vira campo vazio no CSV. Nunca 0: zero é um valor válido e engana a ETL.
+    return '' if valor is None else valor
+
+
+def processos_para_csv():
+    # process_iter pode lançar AccessDenied/NoSuchProcess em processos alheios ou que fecharam.
+    processos = []
+    for processo in psutil.process_iter(['pid', 'name', 'username']):
+        try:
+            info = processo.info
+        except (psutil.AccessDenied, psutil.NoSuchProcess, psutil.ZombieProcess):
+            continue
+        if info['username'] is not None:
+            processos.append(info)
+    return processos
+
+
 print(f"Capturando a cada {INTERVALO}s e enviando a cada {INTERVALO * CAPTURAS_POR_LOTE}s. Ctrl+C para parar.\n")
 
 while True:  # Cada volta do while é um lote
@@ -121,28 +168,45 @@ while True:  # Cada volta do while é um lote
 
         else:  # Leitura da máquina de verdade
             cpu = psutil.cpu_percent(interval=1)
-            interrupcoes = psutil.cpu_stats().interrupts
-            ram = psutil.virtual_memory().percent
-            ram_total = round(psutil.virtual_memory().total / 1024 ** 3, 3)
-            ram_disponivel = round(psutil.virtual_memory().available / 1024 ** 3, 3)
-            disco = psutil.disk_usage('/').percent
-            disco_total = round(psutil.disk_usage('/').total / 1024 ** 3, 3)
-            disco_disponivel = round(psutil.disk_usage('/').free / 1024 ** 3, 3)
-            bytes_enviados = psutil.net_io_counters().bytes_sent
-            bytes_recebidos = psutil.net_io_counters().bytes_recv
-            pacotes_enviados = psutil.net_io_counters().packets_sent
-            pacotes_recebidos = psutil.net_io_counters().packets_recv
-            trocas_contexto = psutil.cpu_stats().ctx_switches
-            temperatura_cpu = round(float(next(iter(psutil.sensors_temperatures().values())).current), 1)
-            tempo_escrita_disco = psutil.disk_io_counters().write_time
+            stats = psutil.cpu_stats()
+            interrupcoes = stats.interrupts
+            trocas_contexto = stats.ctx_switches
+
+            memoria = psutil.virtual_memory()
+            ram = memoria.percent
+            ram_total = round(memoria.total / 1024 ** 3, 3)
+            ram_disponivel = round(memoria.available / 1024 ** 3, 3)
+
+            disco_info = psutil.disk_usage(raiz_disco())
+            disco = disco_info.percent
+            disco_total = round(disco_info.total / 1024 ** 3, 3)
+            disco_disponivel = round(disco_info.free / 1024 ** 3, 3)
+
+            rede = psutil.net_io_counters()
+            if rede is None:  # psutil pode não conseguir ler os contadores de rede em algumas máquinas
+                bytes_enviados = bytes_recebidos = pacotes_enviados = pacotes_recebidos = None
+            else:
+                bytes_enviados = rede.bytes_sent
+                bytes_recebidos = rede.bytes_recv
+                pacotes_enviados = rede.packets_sent
+                pacotes_recebidos = rede.packets_recv
+
+            # Sem sensor (Windows/VM) fica None e vira campo vazio no CSV.
+            temperatura_cpu = ler_temperatura_cpu()
+            tempo_escrita_disco = ler_tempo_escrita_disco()
 
         hora = agora.strftime("%Y-%m-%d %H:%M:%S")
         linhas.append({'id_empresa': id_empresa, 'id_servidor': id_servidor, 'username': nome_servidor,
                         'data_hora': hora, 'cpu': cpu, 'inte_cpu': interrupcoes, 'ram_disponivel': ram_disponivel,
                         'ram_total': ram_total, 'ram': ram, 'disco': disco, 'disco_disponivel': disco_disponivel,
-                        'disco_total': disco_total, 'bytes_enviados': bytes_enviados,'bytes_recebidos': bytes_recebidos,
-                        'pacotes_enviados': pacotes_enviados, 'pacotes_recebidos': pacotes_recebidos, 'trocas_contexto': trocas_contexto,
-                        'temperatura_cpu': temperatura_cpu, 'tempo_escrita_disco': tempo_escrita_disco})
+                        'disco_total': disco_total,
+                        'bytes_enviados': valor_ou_vazio(bytes_enviados),
+                        'bytes_recebidos': valor_ou_vazio(bytes_recebidos),
+                        'pacotes_enviados': valor_ou_vazio(pacotes_enviados),
+                        'pacotes_recebidos': valor_ou_vazio(pacotes_recebidos),
+                        'trocas_contexto': trocas_contexto,
+                        'temperatura_cpu': valor_ou_vazio(temperatura_cpu),
+                        'tempo_escrita_disco': valor_ou_vazio(tempo_escrita_disco)})
         print(f"[{hora} BRT] CPU: {cpu}% | RAM: {ram}% | Disco: {disco}%")
         time.sleep(INTERVALO)
 
@@ -157,12 +221,10 @@ while True:  # Cada volta do while é um lote
     with open(arquivo_processos, 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=campos_processos)
         writer.writeheader()
-        for processo in psutil.process_iter(['pid', 'name', 'username']):
-            info = processo.info
-            if info['username'] is not None:
-                writer.writerow({'id_empresa': id_empresa, 'id_servidor': id_servidor, 'Usuario': nome_servidor,
-                                 'data_hora': hora, 'PID': info['pid'], 'Nome': info['name'],
-                                 'Username': info['username']})
+        for info in processos_para_csv():
+            writer.writerow({'id_empresa': id_empresa, 'id_servidor': id_servidor, 'Usuario': nome_servidor,
+                             'data_hora': hora, 'PID': info['pid'], 'Nome': info['name'],
+                             'Username': info['username']})
 
     # ---------------- ENVIA OS CSVs PARA O BACK-END (ele grava no S3) ----------------
     for arquivo in sorted(os.listdir('.')):

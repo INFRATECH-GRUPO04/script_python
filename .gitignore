@@ -2,3 +2,4 @@ node_modules
 docs
 dados_simulados
 *.csv
+.env

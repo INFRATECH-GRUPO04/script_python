@@ -1,7 +1,8 @@
 """Gera telemetria simulada para todos os servidores ativos e envia ao bronze.
 
 Os servidores e seus componentes vêm do MySQL; os CSVs são montados em memória
-e gravados diretamente no S3 com a IAM Role da EC2 (sem credenciais no .env).
+e gravados diretamente no S3 pela cadeia padrão do boto3: IAM Role na EC2 ou,
+opcionalmente, credenciais via .env para testes locais.
 """
 
 import csv
